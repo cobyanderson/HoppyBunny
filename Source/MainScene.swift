@@ -1,27 +1,12 @@
 import Foundation
 
-class Obstacle: CCNode {
-    weak var topCarrot: CCNode!
-    weak var bottomCarrot: CCNode!
+
+class MainScene: CCNode, CCPhysicsCollisionDelegate {
+    //the part after the commamakes the MainScene class ready to be used as a collision delegate
     
-    let topCarrotMinimumPositionY : CGFloat = 128
-    let bottomCarrotMaximumPositionY : CGFloat = 440
-    let carrotDistance : CGFloat = 142
+    var gameOver = false
     
-    func setupRandomPosition() {
-        let randomPrecision: UInt32 = 100
-        let random = CGFloat(arc4random_uniform(randomPrecision)) / CGFloat(randomPrecision)
-        let range = bottomCarrotMaximumPositionY - carrotDistance - topCarrotMinimumPositionY
-        if let topCarrot = topCarrot, let bottomCarrot = bottomCarrot {
-            topCarrot.position = ccp(topCarrot.position.x, topCarrotMinimumPositionY + (random * range));
-            bottomCarrot.position = ccp(bottomCarrot.position.x, topCarrot.position.y + carrotDistance);
-            println("It got here")
-        }
-    }
-    
-    
-}
-class MainScene: CCNode {
+    weak var restartButton: CCButton!
     
     weak var hero: CCSprite!
         //creates the hero
@@ -45,9 +30,19 @@ class MainScene: CCNode {
     
     weak var obstaclesLayer : CCNode!
     
+    func ccPhysicsCollisionBegin(pair: CCPhysicsCollisionPair!, hero: CCNode!, level: CCNode!) -> Bool {
+        println("hu")
+        triggerGameOver()
+        return true
+        //called whenever hero and level collide
+    }
+    
     func didLoadFromCCB() {
         //enables touch to be used
         userInteractionEnabled = true
+        
+        gamePhysicsNode.collisionDelegate = self
+        //assigns mainscene as the collision delegate
         
         //adds both grounds to the list of grounds
         grounds.append(ground1)
@@ -57,9 +52,27 @@ class MainScene: CCNode {
         for i in 0...2 {
             spawnNewObstacle()
         }
+        
 
     }
- //   println ("wfh")
+    func triggerGameOver() {
+        if (gameOver == false) {
+            gameOver = true
+            restartButton.visible = true
+            scrollSpeed = 0
+            hero.rotation = 90
+            hero.physicsBody.allowsRotation = false
+            
+            // just in case
+            hero.stopAllActions()
+            
+            let move = CCActionEaseBounceOut(action: CCActionMoveBy(duration: 0.2, position: ccp(0, 4)))
+            let moveBack = CCActionEaseBounceOut(action: move.reverse())
+            let shakeSequence = CCActionSequence(array: [move, moveBack])
+            runAction(shakeSequence)
+        }
+    }
+
     
     func spawnNewObstacle() {
         var prevObstaclePos = firstObstaclePosition
@@ -77,10 +90,12 @@ class MainScene: CCNode {
     }
     
     override func touchBegan(touch: CCTouch!, withEvent event: CCTouchEvent!) {
-        //gives impulse on touch
-        hero.physicsBody.applyImpulse(ccp(0, 400))
-        hero.physicsBody.applyAngularImpulse(10000)
-        sinceTouch = 0
+        if (gameOver == false) {
+            //gives impulse on touch
+            hero.physicsBody.applyImpulse(ccp(0, 400))
+            hero.physicsBody.applyAngularImpulse(10000)
+            sinceTouch = 0
+        }
     }
     override func update(delta: CCTime) {
         //limits velocity
@@ -129,9 +144,37 @@ class MainScene: CCNode {
                 spawnNewObstacle()
             }
         }
+        //restarts by reloading the mainscene and some other director crap...sigh
+        func restart() {
+            let scene = CCBReader.loadAsScene("MainScene")
+            CCDirector.sharedDirector().presentScene(scene)
+        }
+       
+    }
+
+}
+
+class Obstacle: CCNode {
+    weak var topCarrot: CCNode!
+    weak var bottomCarrot: CCNode!
+    
+    let topCarrotMinimumPositionY : CGFloat = 128
+    let bottomCarrotMaximumPositionY : CGFloat = 440
+    let carrotDistance : CGFloat = 142
+    
+    func setupRandomPosition() {
+        let randomPrecision: UInt32 = 100
+        let random = CGFloat(arc4random_uniform(randomPrecision)) / CGFloat(randomPrecision)
+        let range = bottomCarrotMaximumPositionY - carrotDistance - topCarrotMinimumPositionY
+        if let topCarrot = topCarrot, let bottomCarrot = bottomCarrot {
+            topCarrot.position = ccp(topCarrot.position.x, topCarrotMinimumPositionY + (random * range));
+            bottomCarrot.position = ccp(bottomCarrot.position.x, topCarrot.position.y + carrotDistance);
+        }
+    }
+    func didLoadFromCCB() {
+        topCarrot.physicsBody.sensor = true;
+        bottomCarrot.physicsBody.sensor = true;
     }
     
-  
-
-
+    
 }
