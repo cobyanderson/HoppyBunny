@@ -59,6 +59,7 @@ class MainScene: CCNode {
         }
 
     }
+ //   println ("wfh")
     
     func spawnNewObstacle() {
         var prevObstaclePos = firstObstaclePosition
