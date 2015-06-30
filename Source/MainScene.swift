@@ -1,9 +1,20 @@
 import Foundation
 
 
+class Goal: CCNode {
+    func didLoadFromCCB() {
+        physicsBody.sensor = true;
+    }
+}
+
+
 class MainScene: CCNode, CCPhysicsCollisionDelegate {
     //the part after the commamakes the MainScene class ready to be used as a collision delegate
     
+    var points : NSInteger = 0
+    weak var scoreLabel : CCLabelTTF!
+        //initiate the goal score
+
     var gameOver = false
     
     weak var restartButton: CCButton!
@@ -31,10 +42,20 @@ class MainScene: CCNode, CCPhysicsCollisionDelegate {
     weak var obstaclesLayer : CCNode!
     
     func ccPhysicsCollisionBegin(pair: CCPhysicsCollisionPair!, hero: CCNode!, level: CCNode!) -> Bool {
-        println("hu")
         triggerGameOver()
         return true
         //called whenever hero and level collide
+    }
+    func ccPhysicsCollisionBegin(pair: CCPhysicsCollisionPair!, hero nodeA: CCNode!, goal: CCNode!) -> Bool {
+        goal.removeFromParent()
+        points++
+        scoreLabel.string = String(points)
+        return true
+    }
+    //restarts by reloading the mainscene and some other director crap...sigh
+    func restart() {
+        let scene = CCBReader.loadAsScene("MainScene")
+        CCDirector.sharedDirector().presentScene(scene)
     }
     
     func didLoadFromCCB() {
@@ -70,6 +91,7 @@ class MainScene: CCNode, CCPhysicsCollisionDelegate {
             let moveBack = CCActionEaseBounceOut(action: move.reverse())
             let shakeSequence = CCActionSequence(array: [move, moveBack])
             runAction(shakeSequence)
+
         }
     }
 
@@ -123,6 +145,11 @@ class MainScene: CCNode, CCPhysicsCollisionDelegate {
         // moves physics node based on position of hero
         gamePhysicsNode.position = ccp(gamePhysicsNode.position.x - scrollSpeed * CGFloat(delta), gamePhysicsNode.position.y)
         
+        //stops black lines by rounding pixels
+        let scale = CCDirector.sharedDirector().contentScaleFactor
+        gamePhysicsNode.position = ccp(round(gamePhysicsNode.position.x * scale) / scale, round(gamePhysicsNode.position.y * scale) / scale)
+        hero.position = ccp(round(hero.position.x * scale) / scale, round(hero.position.y * scale) / scale)
+        
         // loop the ground whenever a ground image was moved entirely outside the screen
         for ground in grounds {
             let groundWorldPosition = gamePhysicsNode.convertToWorldSpace(ground.position)
@@ -144,11 +171,7 @@ class MainScene: CCNode, CCPhysicsCollisionDelegate {
                 spawnNewObstacle()
             }
         }
-        //restarts by reloading the mainscene and some other director crap...sigh
-        func restart() {
-            let scene = CCBReader.loadAsScene("MainScene")
-            CCDirector.sharedDirector().presentScene(scene)
-        }
+        
        
     }
 
@@ -175,6 +198,7 @@ class Obstacle: CCNode {
         topCarrot.physicsBody.sensor = true;
         bottomCarrot.physicsBody.sensor = true;
     }
+
     
     
 }
